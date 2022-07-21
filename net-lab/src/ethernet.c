@@ -16,24 +16,17 @@
  */
 void ethernet_in(buf_t *buf)
 {
-    // TODO
-    ether_hdr_t *ether_header = (ether_hdr_t *)buf->data;
-    uint16_t protocol = swap16(ether_header->protocol);
-    // printf("%d , %x\n", protocol, protocol);
-    switch (protocol)
-    {
-    case NET_PROTOCOL_IP:
-        buf_remove_header(buf, sizeof(ether_hdr_t));
-        ip_in(buf);
-        break;
-    case NET_PROTOCOL_ARP:
-        buf_remove_header(buf, sizeof(ether_hdr_t));
+    // get header
+    ether_hdr_t *header = (ether_hdr_t *)buf->data;
+    uint16_t temp_protocal = swap16(header->protocol);
+    buf_remove_header(buf, sizeof(ether_hdr_t));
+    if (temp_protocal == NET_PROTOCOL_ARP){
         arp_in(buf);
-        break;
-    default:
-        break;
+    } else if (temp_protocal == NET_PROTOCOL_IP){
+        ip_in(buf);
+    } else {
+        printf("fail\n");
     }
-
 }
 
 /**
@@ -47,17 +40,16 @@ void ethernet_in(buf_t *buf)
  */
 void ethernet_out(buf_t *buf, const uint8_t *mac, net_protocol_t protocol)
 {
+    // add a length to the head
     buf_add_header(buf, sizeof(ether_hdr_t));
-    ether_hdr_t *ether_header = (ether_hdr_t *)buf->data;
-    /** 记得交换一下  */ 
-    // protocol 0800 -> ((ether_hdr_t *)ether_header)->protocol: 0008
-    // swap(protocol) 0008 -> ((ether_hdr_t *)ether_header)->protocol: 0800
-    printf("%x\n",protocol);
-    ((ether_hdr_t *)ether_header)->protocol = swap16(protocol);
-    memcpy(((ether_hdr_t *)ether_header)->dest, mac, NET_MAC_LEN);
-    memcpy(((ether_hdr_t *)ether_header)->src, net_if_mac, NET_MAC_LEN);
-    if(driver_send(buf) < 0){
-        panic("ethernet_out()");
+    // get header
+    ether_hdr_t *headr = (ether_hdr_t *) buf->data;
+    memcpy(headr->dest, mac, NET_MAC_LEN);
+    net_protocol_t temp = swap16(protocol);
+    headr->protocol = temp;
+    memcpy(headr->src, net_if_mac, NET_MAC_LEN);
+    if(driver_send(buf) == -1){
+        printf("send fail\n");
     }
 }
 

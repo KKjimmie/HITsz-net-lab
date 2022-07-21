@@ -1,0 +1,7 @@
+{
+  "makefile.extensionOutputFolder": "./.vscode",
+  "cmake.configureOnOpen": true,
+  "files.associations": {
+    "config.h": "c"
+  }
+}
